@@ -95,7 +95,7 @@ HexView::HexView(HWND hwnd)	:
 	m_nAddressWidth(8),
 	m_nHexPaddingLeft(3),
 	m_nHexPaddingRight(3),
-	m_nBytesPerLine(16),
+	m_nBytesPerLine(20),
 	m_nHexWidth(16*3-1),
 	m_nTotalWidth(0),
 	m_nWindowLines(0),
@@ -103,7 +103,7 @@ HexView::HexView(HWND hwnd)	:
 
 	m_nSearchLen(0),
 
-	m_nBytesPerColumn(2),		//1/2/4/8
+	m_nBitsPerColumn(16),		//8/10/16/32
 
 	//m_fMouseDown(FALSE),
 	m_nSelectionMode(SEL_NONE),
@@ -258,10 +258,22 @@ bool HexView::CheckStyle(UINT uStyleFlag)
 	return (m_nControlStyles & uStyleFlag) ? true : false;
 }
 
-int HexView::UnitWidth()
+int HexView::CharactersPerColumn()
 {
-	static const int unitlook[] = { 2, 3, 3, 8 };
-	return unitlook[GetStyleMask(HVS_FORMAT_MASK)];
+	static const int charactersperbytelook[] = { 2, 3, 3, 8 };
+	static const int characterspertenbitwordlook[] = { 3, 4, 4, 10 };
+	int format = GetStyleMask(HVS_FORMAT_MASK);
+	switch (m_nBitsPerColumn) {
+	default:
+	case 8:
+		return charactersperbytelook[format];
+	case 10:
+		return characterspertenbitwordlook[format];
+	case 16:
+		return charactersperbytelook[format] * 2;
+	case 32:
+		return charactersperbytelook[format] * 4;
+	}
 }
 
 UINT HexView::SetStyle(UINT uMask, UINT uStyles)
@@ -270,7 +282,7 @@ UINT HexView::SetStyle(UINT uMask, UINT uStyles)
 
 	m_nControlStyles = (m_nControlStyles & ~uMask) | uStyles;
 
-	SetGrouping(m_nBytesPerColumn);
+	SetGrouping(m_nBitsPerColumn);
 
 	// some of the styles could have caused the address column to change
 	// so recalc as if the file-length changed.
@@ -301,35 +313,28 @@ UINT HexView::GetStyle(UINT uMask)
 
 UINT HexView::GetGrouping()
 {
-	return m_nBytesPerColumn;
+	return m_nBitsPerColumn;
 }
 
-UINT HexView::SetGrouping(UINT nBytes)
+UINT HexView::SetGrouping(UINT nBits)
 {
-	int numcols;
-	int unitwidth = UnitWidth();
-
-	if(nBytes < 1 || nBytes >= 32)
+	if(nBits < 8 || nBits >= 64)
 		return 0;
 
-	m_nBytesPerColumn = nBytes;
+	m_nBitsPerColumn = nBits;
 
-	numcols = m_nBytesPerLine / m_nBytesPerColumn;
-			
 	if(!CheckStyle(HVS_HEX_INVISIBLE))
 	{
-		m_nHexWidth = (unitwidth * m_nBytesPerColumn + 1) * numcols - 1;
-
-		// take into account partial columns
-		if(m_nBytesPerLine % m_nBytesPerColumn)
-			m_nHexWidth += (m_nBytesPerLine % m_nBytesPerColumn) * unitwidth + 1;
+		int characterspercolumn = CharactersPerColumn();
+		int numcols = (m_nBytesPerLine * 8) / m_nBitsPerColumn;
+		m_nHexWidth = (characterspercolumn + 1) * numcols - 1;
 	}
 	else
 	{
 		m_nHexWidth = 0;
 	}
 
-	m_nTotalWidth =  CalcTotalWidth();
+	m_nTotalWidth = CalcTotalWidth();
 	
 	UpdateMetrics();
 	RefreshWindow();
@@ -379,7 +384,7 @@ VOID HexView::RecalcPositions()
 	OnLengthChange(m_pDataSeq->size());
 
 	m_nDataShift %= m_nBytesPerLine;
-	SetGrouping(m_nBytesPerColumn);
+	SetGrouping(m_nBitsPerColumn);
 
 	m_nWindowColumns = min((rect.right-rect.left) / m_nFontWidth, m_nTotalWidth);
 	
@@ -526,22 +531,21 @@ LRESULT HexView::OnSize(UINT nFlags, int width, int height)
 				logwidth -= m_nHexPaddingLeft;
 
 				// just hex
-				m_nBytesPerLine = (logwidth * m_nBytesPerColumn) /
-					(m_nBytesPerColumn * UnitWidth() + 1);
+				m_nBytesPerLine = ((logwidth * m_nBitsPerColumn + 7) / 8) /
+					(CharactersPerColumn() + 1);
 			}
 			else
 			{
 				logwidth -= m_nHexPaddingLeft + m_nHexPaddingRight;
 
 				// ascii + hex
-				m_nBytesPerLine = (logwidth * m_nBytesPerColumn) /
-					(m_nBytesPerColumn * UnitWidth() + m_nBytesPerColumn + 1);
+				m_nBytesPerLine = ((logwidth * m_nBitsPerColumn + 7) / 8) /
+					(CharactersPerColumn() + m_nBitsPerColumn / 8 + 1);
 			}
 		}
 
 		//
-		int minunit = CheckStyle(HVS_FORCE_FIXEDCOLS) ? m_nBytesPerColumn : 1;		
-		m_nBytesPerLine -= m_nBytesPerLine % m_nBytesPerColumn;
+		int minunit = CheckStyle(HVS_FORCE_FIXEDCOLS) ? m_nBitsPerColumn / 8 : 1;		
 
 		// keep within legal limits
 		m_nBytesPerLine = max(m_nBytesPerLine, minunit);

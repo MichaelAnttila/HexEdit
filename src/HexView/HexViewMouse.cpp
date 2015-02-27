@@ -60,17 +60,12 @@ int HexView::GetLogicalX(int x, int *pane, int *subitem /*= 0*/)
 		// clicked in hex column?
 		if(x < m_nHexWidth)
 		{
-			int unitwidth = UnitWidth();
+			int characterspercolumn = CharactersPerColumn();
 
-			int col    = x / (m_nBytesPerColumn * unitwidth + 1);
-			int coloff = min(m_nBytesPerColumn-1,(x - col * (m_nBytesPerColumn * unitwidth + 1)) / unitwidth);
-
-			col *= m_nBytesPerColumn;
-			col += coloff;
+			int col = x / characterspercolumn * characterspercolumn;
 
 			if(subitem)
-				//*subitem = 0;
-				*subitem = (x % (m_nBytesPerColumn * unitwidth + 1)) % unitwidth;
+				*subitem = 0;
 
 			return col;
 		}
@@ -152,7 +147,7 @@ int HexView::LogToPhyXCoord(int x, int pane)
 {
 	int offset	  = 0;
 	int xpos	  = x;
-	int unitwidth = UnitWidth();
+	int characterspercolumn = CharactersPerColumn();
 	
 	switch(pane)
 	{
@@ -160,18 +155,17 @@ int HexView::LogToPhyXCoord(int x, int pane)
 		
 		// if at the end of line need to adjust
 		// but only if we are also at end of a "block"
-		if((x == m_nBytesPerLine) && (m_nBytesPerLine % m_nBytesPerColumn) == 0)
+		if(x == m_nBytesPerLine)
 			offset = -1;
 
-		x = (x * unitwidth) + (x / m_nBytesPerColumn);
+		x = x * characterspercolumn;
 		
 		x -= m_nHScrollPos;
 		x += CheckStyle(HVS_ADDR_INVISIBLE) ? 0 : m_nAddressWidth;
 		x += m_nHexPaddingLeft;
 		x += offset;
 		
-		if(m_nSelectionStart < m_nSelectionEnd && offset == 0 &&
-			(xpos % m_nBytesPerColumn) == 0 && xpos > 0)
+		if(m_nSelectionStart < m_nSelectionEnd && offset == 0 && xpos > 0)
 			x--;
 		
 		return x * m_nFontWidth;
@@ -965,7 +959,7 @@ LRESULT HexView::OnMouseMove(UINT nFlags, int x, int y)
 	{
 		int width     = mx /= m_nFontWidth + m_nHScrollPos;
 		int prevbpl	  = m_nBytesPerLine;
-		int unitwidth = UnitWidth();
+		int characterspercolumn = CharactersPerColumn();
 
 		if(CheckStyle(HVS_HEX_INVISIBLE) == false)
 		{
@@ -973,8 +967,8 @@ LRESULT HexView::OnMouseMove(UINT nFlags, int x, int y)
 			width -= m_nAddressWidth + m_nHexPaddingLeft;
 		
 			// work out how many bytes-per-line will fit into specified width
-			m_nBytesPerLine = (width * m_nBytesPerColumn) / 
-						  (m_nBytesPerColumn * (unitwidth) + 1);
+			m_nBytesPerLine = ((width * m_nBitsPerColumn + 7) / 8) / 
+						  (characterspercolumn + 1);
 		}
 		else
 		{

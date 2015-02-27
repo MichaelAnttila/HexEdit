@@ -1163,10 +1163,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			IDM_VIEW_HEX + (HexView_GetStyle(hwndHV) & HVS_FORMAT_MASK),
 			MF_BYCOMMAND);
 
-		{int look[32] = { 0, 0, 1, 0, 2 };
-		CheckMenuRadioItem(hMenu, IDM_GROUP_BYTE, IDM_GROUP_DWORD, 
-			IDM_GROUP_BYTE + look[HexView_GetGrouping(hwndHV)],
-			MF_BYCOMMAND);
+		switch (HexView_GetGrouping(hwndHV))
+		{
+		default:
+		case 8:
+			CheckMenuRadioItem(hMenu, IDM_GROUP_BYTE, IDM_GROUP_DWORD, IDM_GROUP_BYTE + 0, MF_BYCOMMAND);
+			break;
+
+		case 10:
+			CheckMenuRadioItem(hMenu, IDM_GROUP_BYTE, IDM_GROUP_DWORD, IDM_GROUP_BYTE + 1, MF_BYCOMMAND);
+			break;
+
+		case 16:
+			CheckMenuRadioItem(hMenu, IDM_GROUP_BYTE, IDM_GROUP_DWORD, IDM_GROUP_BYTE + 2, MF_BYCOMMAND);
+			break;
+
+		case 32:
+			CheckMenuRadioItem(hMenu, IDM_GROUP_BYTE, IDM_GROUP_DWORD, IDM_GROUP_BYTE + 3, MF_BYCOMMAND);
+			break;
 		}
 
 		{

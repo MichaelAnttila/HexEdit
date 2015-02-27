@@ -259,10 +259,11 @@
 #define IDM_VIEW_BIN                    40006
 #define IDM_VIEW_FITWINDOW              40007
 #define IDM_GROUP_BYTE                  40008
-#define IDM_GROUP_WORD                  40009
-#define IDM_GROUP_DWORD                 40010
-#define IDM_VIEW_ADDRESS                40011
-#define IDM_VIEW_LOWERCASE              40012
+#define IDM_GROUP_10BITWORD             40009
+#define IDM_GROUP_WORD                  40010
+#define IDM_GROUP_DWORD                 40011
+#define IDM_VIEW_ADDRESS                40012
+#define IDM_VIEW_LOWERCASE              40013
 #define IDM_FILE_NEW                    40014
 #define IDM_FILE_OPEN                   40015
 #define IDM_FILE_SAVE                   40016

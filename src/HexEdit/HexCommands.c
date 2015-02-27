@@ -348,15 +348,19 @@ LONG HexEdit_OnCommand(HWND hwnd, UINT nCommandId, UINT nNotify, HWND hwndContro
 		return 0;
 		
 	case IDM_GROUP_BYTE:
-		HexView_SetGrouping(hwndHV, 1);
+		HexView_SetGrouping(hwndHV, 8);
 		return 0;
-		
+
+	case IDM_GROUP_10BITWORD:
+		HexView_SetGrouping(hwndHV, 10);
+		return 0;
+
 	case IDM_GROUP_WORD:
-		HexView_SetGrouping(hwndHV, 2);
+		HexView_SetGrouping(hwndHV, 16);
 		return 0;
 		
 	case IDM_GROUP_DWORD:
-		HexView_SetGrouping(hwndHV, 4);
+		HexView_SetGrouping(hwndHV, 32);
 		return 0;
 		
 		/*	case IDM_GROUP_QWORD:

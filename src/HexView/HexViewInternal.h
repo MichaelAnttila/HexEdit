@@ -197,7 +197,7 @@ public:
 	void	RefreshWindow();
 	int		PaintLine(HDC hdc, size_w nLineNo, BYTE *data, size_t datalen, seqchar_info *bufinfo);
 	size_t	FormatAddress(size_w addr, TCHAR *buf, size_t buflen);
-	size_t	FormatHexUnit(BYTE *data, TCHAR *buf, size_t buflen);
+	size_t	FormatHexUnit(UINT data, TCHAR *buf, size_t buflen);
 	size_t	FormatLine(BYTE *data, size_t length, size_w offset, TCHAR *buf, size_t buflen, ATTR *attrList, seqchar_info *infobuf, bool fIncSelection);
 
 	size_t	FormatData(HEXFMT_PARAMS *fmtParams);
@@ -233,7 +233,7 @@ public:
 	UINT	SetStyle(UINT uMask, UINT uStyles);
 	UINT	GetStyle(UINT uMask);
 	UINT	GetStyleMask(UINT uStyleFlag);
-	UINT	SetGrouping(UINT nBytes);
+	UINT	SetGrouping(UINT nBits);
 	UINT	GetGrouping();
 	UINT	GetLineLen();
 	UINT	SetLineLen(UINT nLineLen);
@@ -241,7 +241,7 @@ public:
 
 	size_w  NumFileLines(size_w length);
 	bool	IsOverResizeBar(int x);
-	int		UnitWidth();
+	int		CharactersPerColumn();
 
 	size_w  SelectionSize();
 	size_w  SelectionStart();
@@ -329,7 +329,7 @@ private:
 	int		m_nWindowLines;
 	int		m_nWindowColumns;
 	int		m_nBytesPerLine;
-	int		m_nBytesPerColumn;
+	int		m_nBitsPerColumn;
 
 	// Scrollbar dimensions
 	size_w	m_nVScrollPos;

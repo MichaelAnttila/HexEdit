@@ -39,22 +39,17 @@ bool operator == (HEXCOL &c1, HEXCOL &c2)
 	return memcmp(&c1, &c2, sizeof(HEXCOL)) == 0;
 }
 
-static size_t int_to_bin(TCHAR *buf, UINT width, UINT num)
+static size_t int_to_bin(TCHAR *buf, UINT bits, UINT num)
 {
 	TCHAR *start = buf;
 	size_t i;
 
-	while(width > 0)
+	int mask = 0x00000001 << (bits - 1);
+
+	for(i = 0; i < bits; i++)
 	{
-		BYTE val = (num >> ((width * 8) - 8)) & 0x000000ff;
-
-		for(i = 0; i < 8; i++)
-		{
-			*buf++ = (num & 0x80) ? '1' : '0';
-			num <<= 1;
-		}
-
-		width--;
+		*buf++ = (num & mask) ? '1' : '0';
+		num <<= 1;
 	}
 
 	*buf = 0;
@@ -150,24 +145,36 @@ COLORREF HexView::RealiseColour(COLORREF cr)
 	return HexView_RealiseColour(cr);
 }
 
-size_t HexView::FormatHexUnit(BYTE *data, TCHAR *buf, size_t buflen)
+size_t HexView::FormatHexUnit(UINT data, TCHAR *buf, size_t buflen)
 {
 	TCHAR *szFmt;
 
 	switch(m_nControlStyles & HVS_FORMAT_MASK)
 	{
 	case HVS_FORMAT_HEX:
-		szFmt = CheckStyle( HVS_LOWERCASEHEX ) ? _T("%02x") : _T("%02X");
-		return _stprintf(buf, szFmt, data[0]);
+		if (m_nBitsPerColumn == 10) {
+			szFmt = CheckStyle(HVS_LOWERCASEHEX) ? _T("%03x") : _T("%03X");
+		} else {
+			szFmt = CheckStyle(HVS_LOWERCASEHEX) ? _T("%02x") : _T("%02X");
+		}
+		return _stprintf(buf, szFmt, data);
 
 	case HVS_FORMAT_DEC:
-		return _stprintf(buf, _T("%03d"), data[0]);
+		if (m_nBitsPerColumn == 10) {
+			return _stprintf(buf, _T("%04d"), data);
+		} else {
+			return _stprintf(buf, _T("%03d"), data);
+		}
 	
 	case HVS_FORMAT_OCT:
-		return _stprintf(buf, _T("%03o"), data[0]);
+		if (m_nBitsPerColumn == 10) {
+			return _stprintf(buf, _T("%04o"), data);
+		} else {
+			return _stprintf(buf, _T("%03o"), data);
+		}
 
 	case HVS_FORMAT_BIN:
-		return int_to_bin(buf, 1, data[0]);
+		return int_to_bin(buf, m_nBitsPerColumn == 10 ? 10 : 8, data);
 
 	default:
 		buf[0] = '\0';
@@ -290,11 +297,32 @@ size_t HexView::FormatLine(
 
 		AddAttr(&attrPtr, GetHexColour(HVC_ADDRESS), GetHexColour(HVC_BACKGROUND), m_nHexPaddingLeft);
 
-		for(i = 0; i < (int)length/* m_nBytesPerLine*/; i++)
+		int actuallength = length;
+		if (m_nBitsPerColumn == 10) {
+			actuallength = length * 8 / 10;
+		}
+		int dataindex = 0;
+		int firstmask = 0xFF;
+		int firstshift = 2;
+		int secondmask = 0xC0;
+		int secondshift = 6;
+		for(i = 0; i < actuallength/* m_nBytesPerLine*/; i++)
 		{
 			HEXCOL col1, col2;
 
-			size_t len = FormatHexUnit(&data[i], ptr, 0);
+			int actualdata = data[dataindex];
+			if (m_nBitsPerColumn == 10) {
+				actualdata = ((data[dataindex] & firstmask) << firstshift) + ((data[dataindex + 1] & secondmask) >> secondshift);
+				switch (firstmask) {
+				case 0xFF:	firstmask = 0x3F;	firstshift = 4;	secondmask = 0xF0; secondshift = 4;	break;
+				case 0x3F:	firstmask = 0x0F;	firstshift = 6;	secondmask = 0xFC; secondshift = 2;	break;
+				case 0x0F:	firstmask = 0x03;	firstshift = 8;	secondmask = 0xFF; secondshift = 0; break;
+				case 0x03:	firstmask = 0xFF;	firstshift = 2;	secondmask = 0xC0; secondshift = 6;	dataindex++;  break;
+				}
+			}
+			dataindex++;
+
+			size_t len = FormatHexUnit(actualdata, ptr, 0);
 			ptr += len;
 
 			GetHighlightCol(offset+i, 0, highlight, &col1, &col2, 
@@ -311,17 +339,17 @@ size_t HexView::FormatLine(
 
 
 			// add the colour information
-			if(col1 != col2 || i == m_nBytesPerLine - 1 || (i+1) % (m_nBytesPerColumn) != 0)
+			if(col1 != col2 || i == m_nBytesPerLine - 1 || (i+1) % (m_nBitsPerColumn / 8) != 0)
 			{
 				AddAttr(&attrPtr, col1.colFG, col1.colBG, len);
 
-				if((i+1) % (m_nBytesPerColumn) == 0 && (i < length/*m_nBytesPerLine*/ - 1))
+				if((i+1) % (m_nBitsPerColumn / 8) == 0 && (i < actuallength/*m_nBytesPerLine*/ - 1))
 				{
 					*ptr++ = ' ';
 					AddAttr(&attrPtr, col2.colFG, col2.colBG, 1);
 				}
 			}
-			else if(i < length - 1)
+			else if(i < actuallength - 1)
 			{
 				*ptr++ = ' ';
 				AddAttr(&attrPtr, col1.colFG, col1.colBG, len+1);
@@ -331,6 +359,7 @@ size_t HexView::FormatLine(
 				AddAttr(&attrPtr, col1.colFG, col1.colBG, len);
 			}
 		}
+		i = length;
 
 		// dead space 
 		if(i != m_nBytesPerLine)
@@ -669,7 +698,7 @@ LRESULT HexView::OnPaint()
 
 		size_t len = (size_t)min(buflen - offset, m_nBytesPerLine);
 		fixthis = (i == 0) ? m_nDataShift : 0;
-		
+
 		int width = PaintLine(ps.hdc, i, bigbuf + offset, len, bufinfo + offset);
 
 		

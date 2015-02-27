@@ -115,6 +115,7 @@ BEGIN
         MENUITEM "&Binary",                     IDM_VIEW_BIN
         MENUITEM SEPARATOR
         MENUITEM "&8 Bit Byte",                 IDM_GROUP_BYTE
+        MENUITEM "&10 Bit Word",                IDM_GROUP_10BITWORD
         MENUITEM "&16 Bit Word",                IDM_GROUP_WORD, CHECKED
         MENUITEM "&32 Bit Dword",               IDM_GROUP_DWORD
     END

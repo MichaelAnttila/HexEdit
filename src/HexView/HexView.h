@@ -419,13 +419,13 @@ typedef struct _NMHVBOOKMARK
 	(UINT)SNDMSG((hwnd), HVM_SETSTYLE, (WPARAM)(UINT)(uMask), (LPARAM)(UINT)(uStyle))
 
 /**
- * Specify the byte-grouping arrangement in the hex-pane. This allows
- * the hexpane to group bytes into columns. Typical values are 1, 2, 4 and 8
+ * Specify the bit-grouping arrangement in the hex-pane. This allows
+ * the hexpane to group bits into columns. Typical values are 8, 10, 16 and 32
  *
- * @param UINT nBytes - the number of bytes in each column grouping
+ * @param UINT nBits - the number of bits in each column grouping
  */
-#define HexView_SetGrouping(hwnd, nBytes) \
-	(UINT)SNDMSG((hwnd), HVM_SETGROUPING, (WPARAM)(UINT)(nBytes), 0)
+#define HexView_SetGrouping(hwnd, nBits) \
+	(UINT)SNDMSG((hwnd), HVM_SETGROUPING, (WPARAM)(UINT)(nBits), 0)
 
 /**
  * Return the current styles selected into the hexview control
@@ -446,7 +446,7 @@ typedef struct _NMHVBOOKMARK
 	(UINT)SNDMSG((hwnd), HVM_GETSTYLE, (WPARAM)(UINT)(uMask), 0)
 
 /**
- * Return the current byte-grouping arrange in the hex pane
+ * Return the current bit-grouping arrange in the hex pane
  *
  */
 #define HexView_GetGrouping(hwnd) \
